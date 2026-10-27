@@ -1,0 +1,14 @@
+{
+  "name": "qz1-iphone",
+  "version": "0.1.0",
+  "description": "Use a Bluetooth GNSS receiver (the QZ1) with an iPhone, through an M5Stack Core2 bridge",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "fake": "node tools/fake-core2.mjs",
+    "pack": "node tools/pack-sd.mjs"
+  },
+  "engines": { "node": ">=22" }
+}
