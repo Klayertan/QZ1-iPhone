@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>QZ1 iPhone viewer</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23214e57'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%2338bdf8'/%3E%3C/svg%3E">
+  <style>
+    :root { --bg:#f6f7f8; --card:#fff; --text:#15202b; --muted:#5b6b7a; --line:#d8dee4; --accent:#0b6bcb; --good:#1a7f37; --warn:#b35900; --bad:#c62828; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#0e141a; --card:#18212a; --text:#e8eef3; --muted:#9fb0bf; --line:#2a3744; --accent:#4aa3ff; --good:#4cc26a; --warn:#f0a040; --bad:#ff6b6b; } }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:max(12px, env(safe-area-inset-top)) 12px 32px; background:var(--bg); color:var(--text); font:16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 640px; margin: 0 auto; display: grid; gap: 12px; }
+    h1 { font-size: 20px; margin: 4px 0; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+    .pill { font-size: 13px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-weight: 400; }
+    .pill.on { color: var(--good); border-color: var(--good); }
+    button { font: inherit; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; min-height: 44px; }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.danger { color: var(--bad); border-color: var(--bad); }
+    button:disabled { opacity: .45; cursor: default; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .meta { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+    .badge { display: inline-block; padding: 6px 14px; border-radius: 10px; font-weight: 600; color: #fff; background: var(--muted); }
+    .badge.good { background: var(--good); } .badge.warn { background: var(--warn); } .badge.bad { background: var(--bad); }
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 12px 0 0; }
+    dt { color: var(--muted); } dd { margin: 0; font-variant-numeric: tabular-nums; }
+    #sky { width: 100%; max-width: 280px; display: block; margin: 0 auto; }
+    .snr { display: grid; grid-template-columns: 74px 1fr 34px; gap: 8px; align-items: center; font-size: 14px; margin-top: 4px; }
+    .bar { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; } .bar > i { display: block; height: 100%; background: var(--accent); }
+    .bar.used > i { background: var(--good); }
+    pre { margin: 0; max-height: 9.5em; overflow: auto; font-size: 12px; line-height: 1.4; white-space: pre-wrap; word-break: break-all; color: var(--muted); }
+    a { color: var(--accent); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>QZ1 iPhone <span id="state" class="pill">not connected</span></h1>
+
+  <section class="card">
+    <h2>Connect</h2>
+    <div class="row">
+      <button id="connectBle" class="primary" hidden>Connect (Bluetooth)</button>
+      <button id="connectWifi" class="primary" hidden>Connect (bridge Wi-Fi)</button>
+      <button id="disconnect" class="danger" hidden>Disconnect</button>
+    </div>
+    <p id="help" class="meta"></p>
+  </section>
+
+  <section class="card">
+    <h2>Position</h2>
+    <span id="badge" class="badge">No data yet</span>
+    <dl>
+      <dt>Latitude</dt><dd id="lat">-</dd>
+      <dt>Longitude</dt><dd id="lon">-</dd>
+      <dt>Altitude</dt><dd id="alt">-</dd>
+      <dt>Speed / course</dt><dd id="motion">-</dd>
+      <dt>Satellites</dt><dd id="sats">-</dd>
+      <dt>HDOP</dt><dd id="hdop">-</dd>
+      <dt>UTC time</dt><dd id="utc">-</dd>
+      <dt>Update</dt><dd id="age">-</dd>
+    </dl>
+    <p class="meta">The fix label is what the receiver reports. It is not an accuracy claim.</p>
+  </section>
+
+  <section class="card">
+    <h2>Satellites</h2>
+    <svg id="sky" viewBox="-110 -110 220 220" role="img" aria-label="Sky plot, north up"></svg>
+    <div id="snr"></div>
+  </section>
+
+  <section class="card">
+    <h2>Record</h2>
+    <div class="row">
+      <button id="recStart">Start recording</button>
+      <button id="recStop" disabled>Stop</button>
+      <button id="recSave" disabled>Save .nmea</button>
+    </div>
+    <p id="recInfo" class="meta">Recording keeps the raw NMEA in this page's memory until you save it. Nothing is uploaded.</p>
+  </section>
+
+  <section class="card">
+    <h2>Raw NMEA</h2>
+    <pre id="raw" aria-live="off"></pre>
+  </section>
+
+  <p class="meta">Open source: <a href="https://github.com/Klayertan/QZ1-iPhone">github.com/Klayertan/QZ1-iPhone</a>. This page makes no network requests except to your bridge.</p>
+</main>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
